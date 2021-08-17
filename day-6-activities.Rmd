@@ -1,0 +1,220 @@
+---
+title: "day-6-activities"
+author: "Juliet"
+date: "8/16/2021"
+output: html_document
+---
+## Task 2
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(janitor)
+library(here)
+library(tidyverse)
+```
+
+```{r}
+lobsters <- read_csv(here("data","Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) %>% 
+  clean_names() %>% 
+  uncount(count)
+
+#dplyr::uncount() converts the original format of the table, which was a frequency table, to a case table, which shows each obs as a row and therefore is tidy
+```
+
+### find counts and mean sizes by site and year
+```{r}
+
+#step by step
+# separate grouping by site and year
+
+lobster_counts_site <- lobsters %>% 
+  group_by(site) %>% 
+  summarize(total_lobsters_site = n(),
+            mean_carapace_length_site = mean(size_mm, na.rm = TRUE))
+
+lobster_counts_site
+
+lobster_counts_year <- lobsters %>% 
+  group_by(year) %>% 
+  summarize(total_lobsters_year = n(),
+            mean_carapace_length_year = mean(size_mm, na.rm = TRUE))
+
+lobster_counts_year
+
+#combine these code chunks into 1
+
+lobster_counts <- lobsters %>% 
+  group_by(site, year) %>% 
+  summarize(total_lobsters_site = n(),
+            mean_carapace_length_site = mean(size_mm, na.rm = TRUE),
+            total_lobsters_year = n(),
+            mean_carapace_length_year = mean(size_mm, na.rm = TRUE))
+
+lobster_counts
+
+
+lobster_counts_plot <- ggplot(data = lobster_counts, aes(x = year, y = total_lobsters_site)) +
+  geom_line(aes(color = site))
+
+  #facet_wrap(lobster_counts$site)
+
+lobster_counts_plot
+
+
+```
+### proportion of legal lobsters
+
+```{r}
+# 79.76 = minimum
+
+#bird_bills <- penguins %>% 
+#  mutate(bird_bill_bin = case_when(
+#    bill_length_mm < 38 ~ "short bill",
+#    bill_length_mm >= 38 & bill_length_mm < 43 ~ "medium bill",
+#    TRUE ~ "long bill"
+#  ))
+
+lobsters_2020 <- lobsters %>% 
+  filter(year == 2020)
+
+#lobsters_legal <- lobsters %>% 
+#  filter(size_mm >= 79.76) %>% 
+  
+lobsters_2020_legal <- lobsters_2020 %>% 
+  mutate(legal = case_when(
+    size_mm >= 79.76 ~ "yes",
+    size_mm < 79.76 ~ "no"))
+
+lobsters_2020_legal_site <- lobsters_2020 %>% 
+  group_by(site) %>% 
+  mutate(legal = case_when(
+    size_mm >= 79.76 ~ "yes",
+    size_mm < 79.76 ~ "no"))
+
+#lobsters_2020_legal_site
+
+# switch the order of group_by and mutate
+
+lobsters_2020_legal_site <- lobsters_2020 %>% 
+  mutate(legal = case_when(
+    size_mm >= 79.76 ~ "yes",
+    size_mm < 79.76 ~ "no")) %>% 
+   group_by(site, legal) %>% 
+  summarize(site_legal_count = n())
+
+proportion_legal_graph <- ggplot(lobsters_2020_legal_site, aes(x = site, y = site_legal_count)) +
+  geom_col(position = "fill",
+               aes(color = legal,
+               fill = legal))
+
+proportion_legal_graph
+
+# the sites Isla Vista and Naples have the highest proportion of legal lobsters in 2020. I think this is the case because they are MPA's and therefore the lobsters have the most opportunity to grow larger with limited fishing and disturbance.
+```
+
+## Task 3
+
+```{r}
+# filter
+
+ex_a <- lobsters %>% 
+  filter(site %in% c("IVEE", "CARP", "NAPL"))
+
+ex_a
+
+ex_b <- lobsters %>% 
+  filter(month == 8)
+
+ex_b
+
+ex_c <- lobsters %>% 
+  filter(site == "AQUE" |
+           size_mm > 70)
+
+ex_c
+
+ex_d <- lobsters %>% 
+  filter(site != "NAPL")
+
+ex_d
+```
+
+
+```{r}
+#group_by
+
+ex_e <- lobsters %>% 
+  group_by(site) %>% 
+  summarize(mean_lob_site = mean(size_mm, na.rm = TRUE),
+            sd_lob_site = sd(size_mm, na.rm = TRUE))
+
+ex_e
+
+ex_f <- lobsters %>% 
+  group_by(site, month) %>% 
+  summarize(max_length_site_month = max(size_mm, na.rm = TRUE))
+
+ex_f
+
+```
+
+```{r}
+#mutate practice
+
+length_cm <- lobsters %>% 
+  mutate(size_cm = size_mm/10)
+
+length_cm
+
+lowercase_site_lobsters <- lobsters %>%
+  mutate(site_lower = tolower(site))
+
+area_character <- lobsters %>% 
+  mutate(area = as.character(area))
+
+class(area_character$area)
+
+  
+```
+
+
+```{r}
+#case_when
+
+ex_j <- lobsters %>% 
+  mutate(size_bin = case_when(
+    size_mm <= 70 ~ "small",
+    size_mm > 70 ~ "large"
+  ))
+
+ex_j
+
+ex_k <- lobsters %>% 
+  mutate(designation = case_when(
+    site %in% c("IVEE", "NAPL") ~ "MPA",
+    TRUE ~ "not MPA"
+    #site !== "IVEE"| site !== "NAPL" ~ "not MPA"
+  ))
+
+ex_k
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
